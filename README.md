@@ -4,6 +4,11 @@ A simple HTTP mock develpment server.
 
 - Auto reloads when the configuration or a file in the root directory changed
 
+### Command line flags
+- `-http.addr=:8080` the port where we listen
+- `-config.data=./data` the data dir to watch
+- `-config.routes=routes.yaml` the routes.yaml definition file 
+
 ### Config
 By default the mock server reads from routes.yaml
 This file should contain all the routes

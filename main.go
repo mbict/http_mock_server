@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/fsnotify/fsnotify"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -79,7 +80,14 @@ func (m RouteMatcher) Match(request *http.Request) bool {
 }
 
 func main() {
-	config := readConfig()
+
+	var addr = flag.String("http.addr", ":8080", "port to listen")
+	var configRoutes = flag.String("config.routes", "routes.yaml", "routes definition file")
+	var configDataDir = flag.String("config.data", "./data", "data dir when the config file is")
+
+	flag.Parse()
+
+	config := readConfig(path.Join(*configDataDir, *configRoutes))
 
 	matchers := generateMatchers(config)
 
@@ -98,7 +106,7 @@ func main() {
 					return
 				}
 				log.Println("file system changed, reloading config")
-				matchers = generateMatchers(readConfig())
+				matchers = generateMatchers(readConfig(path.Join(*configDataDir, *configRoutes)))
 
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -109,7 +117,7 @@ func main() {
 		}
 	}()
 
-	err = watcher.Add("./data")
+	err = watcher.Add(*configDataDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,15 +130,17 @@ func main() {
 				}
 				response.WriteHeader(route.Response.Code)
 				response.Write(route.Response.Body)
+				log.Printf("handled [%s] %s", request.Method, request.RequestURI)
 				return
 			}
 		}
+		log.Printf("ignored [%s] %s", request.Method, request.RequestURI)
 
 		http.NotFound(response, request)
 	})
 
-	log.Println("server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("server started on", *addr)
+	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
 func generateMatchers(config Config) []RouteMatcher {
@@ -191,8 +201,8 @@ func generateMatchers(config Config) []RouteMatcher {
 	return matchers
 }
 
-func readConfig() Config {
-	configFile, err := ioutil.ReadFile("./data/routes.yaml")
+func readConfig(filename string) Config {
+	configFile, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
