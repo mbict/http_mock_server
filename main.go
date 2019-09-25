@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/fsnotify/fsnotify"
+	"github.com/radovskyb/watcher"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"time"
 )
 
 type Config struct {
@@ -92,35 +93,37 @@ func main() {
 	matchers := generateMatchers(config)
 
 	//watch for changes in filesystem to reload mocking server
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
+	w := watcher.New()
+	w.SetMaxEvents(1)
 
 	go func() {
 		for {
 			select {
-			case _, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				log.Println("file system changed, reloading config")
+			case <-w.Event:
+				log.Println("file change detected, reloading config")
 				matchers = generateMatchers(readConfig(path.Join(*configDataDir, *configRoutes)))
-
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				log.Println("error:", err)
+			case err := <-w.Error:
+				log.Fatalln(err)
+			case <-w.Closed:
+				return
 			}
 		}
 	}()
 
-	err = watcher.Add(*configDataDir)
-	if err != nil {
-		log.Fatal(err)
+	if err := w.AddRecursive(*configDataDir); err != nil {
+		log.Fatalln(err)
 	}
+
+	for path, f := range w.WatchedFiles() {
+		log.Printf("watched files %s: %s\n", path, f.Name())
+	}
+
+	// Start the watching process
+	go func() {
+		if err := w.Start(time.Millisecond * 1000); err != nil {
+			log.Fatalln(err)
+		}
+	}()
 
 	http.HandleFunc("/", func(response http.ResponseWriter, request *http.Request) {
 		for _, route := range matchers {
