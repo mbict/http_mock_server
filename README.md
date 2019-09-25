@@ -81,6 +81,8 @@ routes:
 ``` 
 
 ### Docker run a local instance
+See [https://hub.docker.com/r/mbict/http_mock_server](https://hub.docker.com/r/mbict/http_mock_server) for more info.
+
 Build
 ```bash
 docker build --target app -t mbict/http_mock_server .
