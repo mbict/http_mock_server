@@ -1,0 +1,62 @@
+routes:
+  - path: /test
+    method: GET
+    query:
+      parama: abc
+    response:
+      body: ./test.json
+      code: 200
+
+  - path: /test
+    method: GET
+    headers:
+      "Accept-Type": "abc"
+      Blup: "test"
+    query:
+      parama: 123
+    response:
+      body: ./test.json
+      code: 200
+      headers:
+        "Location": "http://www.test.com"
+
+  - path: /test
+    method: GET
+    response:
+      body: ./test.json
+      code: 200
+
+  - path: /123
+    method: GET
+    response:
+      body: >
+        This is a test response body
+        Hello my friend
+      code: 200
+      headers:
+        "Location": "http://www.test.com"
+        "Content-Type": "application/text"
+
+  - path: /123.*
+    method: GET
+    response:
+      body: >
+        alternative path
+      code: 200
+      headers:
+        "Location": "http://www.test.com"
+        "Media-Type": "application/text"
+
+  - path: /123
+    method: POST
+    headers:
+      "Accept-Type": "abc"
+      Blup: "test"
+    query:
+      param1: abc
+      param2: 123
+    response:
+      body: test.json
+      code: 200
+      headers:
+        "Location": "http://www.test.com"
