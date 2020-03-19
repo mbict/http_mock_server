@@ -31,6 +31,7 @@ type Response struct {
 	Code    int               `yaml:"code"`
 	Body    string            `yaml:"body"`
 	Headers map[string]string `yaml:"headers"`
+	Sleep   time.Duration     `yaml:"sleep"`
 }
 
 type RouteMatcher struct {
@@ -47,6 +48,7 @@ type ResponseRequest struct {
 	Body      []byte
 	MediaType string
 	Headers   map[string]string
+	Sleep     time.Duration
 }
 
 func (m RouteMatcher) Match(request *http.Request) bool {
@@ -128,6 +130,9 @@ func main() {
 	http.HandleFunc("/", func(response http.ResponseWriter, request *http.Request) {
 		for _, route := range matchers {
 			if route.Match(request) {
+
+				time.Sleep(route.Response.Sleep)
+
 				for headerKey, value := range route.Response.Headers {
 					response.Header().Add(headerKey, value)
 				}
@@ -198,6 +203,7 @@ func generateMatchers(config Config) []RouteMatcher {
 				Code:    route.Response.Code,
 				Body:    body,
 				Headers: route.Response.Headers,
+				Sleep:   route.Response.Sleep,
 			},
 		})
 	}

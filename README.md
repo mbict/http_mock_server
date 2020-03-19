@@ -52,6 +52,9 @@ When no file is found the contents of the body will be returned instead
 #### > headers
 The response headers returned by the request
 
+#### > sleep
+Mimic long running request or timeouts, provide a time the request will block until it returns data like 30s
+
 ### Example /data/routes.yaml
 ```yaml
 routes:

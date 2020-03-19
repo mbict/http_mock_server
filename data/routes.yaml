@@ -61,3 +61,11 @@ routes:
       code: 200
       headers:
         "Location": "http://www.test.com"
+
+  - path: /longrequest
+    method: GET
+    response:
+      sleep: 30s
+      code: 200
+      body: >
+        took some time
