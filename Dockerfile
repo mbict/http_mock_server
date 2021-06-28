@@ -3,7 +3,7 @@ MAINTAINER Michael Boke <michael@mbict.nl>
 WORKDIR /app
 ADD main.go main.go
 ADD go.mod go.mod
-RUN go mod download
+RUN go get
 RUN CGO_ENABLED=0 go build -a -ldflags '-s -w -extldflags "-static"' -o svc .
 
 FROM scratch AS app
