@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/radovskyb/watcher"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -11,6 +13,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -19,12 +22,13 @@ type Config struct {
 }
 
 type Route struct {
-	Path     string            `yaml:"path"`
-	Method   string            `yaml:"method"`
-	Payload  string            `yaml:"payload"`
-	Query    map[string]string `yaml:"query"`
-	Headers  map[string]string `yaml:"headers"`
-	Response Response          `yaml:"response"`
+	Path      string            `yaml:"path"`
+	Method    string            `yaml:"method"`
+	Payload   string            `yaml:"payload"`
+	Query     map[string]string `yaml:"query"`
+	Headers   map[string]string `yaml:"headers"`
+	Response  Response          `yaml:"response"`
+	JWTClaims map[string]string `yaml:"jwt_claims"`
 }
 
 type Response struct {
@@ -35,12 +39,13 @@ type Response struct {
 }
 
 type RouteMatcher struct {
-	Method   string
-	Path     *regexp.Regexp
-	Payload  *regexp.Regexp
-	Query    map[string]*regexp.Regexp
-	Headers  map[string]*regexp.Regexp
-	Response ResponseRequest
+	Method    string
+	Path      *regexp.Regexp
+	Payload   *regexp.Regexp
+	Query     map[string]*regexp.Regexp
+	Headers   map[string]*regexp.Regexp
+	Response  ResponseRequest
+	JWTClaims map[string]*regexp.Regexp
 }
 
 type ResponseRequest struct {
@@ -71,6 +76,26 @@ func (m RouteMatcher) Match(request *http.Request) bool {
 		value := request.Header.Get(headerKey)
 		if !headerMatcher.MatchString(value) {
 			return false
+		}
+	}
+
+	if len(m.JWTClaims) > 0 {
+		token := strings.Split(request.Header.Get("Authorization"), " ")
+		if len(token) != 2 {
+			return false
+		}
+
+		jwtToken, err := jwt.Parse([]byte(token[1]))
+		if err != nil {
+			return false
+		}
+
+		for jwtClaimKey, jwtClaimMatcher := range m.JWTClaims {
+			claim, _ := jwtToken.Get(jwtClaimKey)
+			value := fmt.Sprintf("%s", claim)
+			if !jwtClaimMatcher.MatchString(value) {
+				return false
+			}
 		}
 	}
 
@@ -170,6 +195,14 @@ func generateMatchers(config Config) []RouteMatcher {
 			headerMatchers[key] = regexp.MustCompile("^" + value + "$")
 		}
 
+		jwtClaimMatchers := map[string]*regexp.Regexp{}
+		for key, value := range route.JWTClaims {
+			if len(value) == 0 {
+				value = ".*"
+			}
+			jwtClaimMatchers[key] = regexp.MustCompile("^" + value + "$")
+		}
+
 		if len(route.Path) == 0 {
 			route.Path = ".*"
 		}
@@ -194,11 +227,12 @@ func generateMatchers(config Config) []RouteMatcher {
 		}
 
 		matchers = append(matchers, RouteMatcher{
-			Method:  route.Method,
-			Path:    regexp.MustCompile("^" + route.Path + "$"),
-			Payload: regexp.MustCompile(route.Payload),
-			Query:   queryMatchers,
-			Headers: headerMatchers,
+			Method:    route.Method,
+			Path:      regexp.MustCompile("^" + route.Path + "$"),
+			Payload:   regexp.MustCompile(route.Payload),
+			Query:     queryMatchers,
+			Headers:   headerMatchers,
+			JWTClaims: jwtClaimMatchers,
 			Response: ResponseRequest{
 				Code:    route.Response.Code,
 				Body:    body,

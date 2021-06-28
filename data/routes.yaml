@@ -1,4 +1,31 @@
 routes:
+  - # example: curl -H 'Accept: application/json' -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0QGxvY2FsaG9zdCIsIm5hbWUiOiJUaW51cyBUZXN0ZXIifQ.hbgWG4zlJr4jkDIvTGWv7t5eUArwjpZb2VHRfel55HI" http://localhost:8080/jwt-test
+  - path: /jwt-test
+    method: GET
+    jwt_claims:
+      sub: "test@localhost"
+    response:
+      body: >
+        got jwt token with user@local
+      code: 200
+
+  # example: curl -H 'Accept: application/json' -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBsb2NhbGhvc3QiLCJuYW1lIjoiQWRtaW4ifQ.rOtMBW1XofFNAiRqVfqW5wQHtQfS70FWAeoIZ4LS3uw" http://localhost:8080/jwt-test
+  - path: /jwt-test
+    method: GET
+    jwt_claims:
+      sub: "admin@localhost"
+    response:
+      body: >
+        got jwt token with admin@local
+      code: 200
+
+  - path: /jwt-test
+    method: GET
+    response:
+      body: >
+        no match on jwt token we forbid you ;)
+      code: 403
+
   - path: /test
     method: GET
     query:

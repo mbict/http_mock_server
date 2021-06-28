@@ -38,6 +38,11 @@ This is a hashmap where the value of the header will be matched against the rege
 This is the raw body of the posted content of a POST, PUT or PATCH request.
 The contents will be matched against the regex pattern.
 
+#### > jwt_claims
+If a JWT token is provided in the authorization Bearer token, it will try to match based on the names of the claims..
+All checks are done with regex pattern matching.
+
+
 ### Response
 
 #### > code
@@ -86,6 +91,15 @@ routes:
       code: 201
       headers:
         "Location": "http://www.test.com"
+
+  - path: /jwt-test
+      method: GET
+      jwt_claims:
+        sub: "test@localhost"
+      response:
+        body: >
+          got jwt token with user@local
+        code: 200
 ``` 
 
 ### Docker run a local instance
